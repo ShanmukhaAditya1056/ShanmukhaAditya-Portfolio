@@ -4,6 +4,22 @@ import { escapeHtml } from './sanitize.js';
 const OWNER_EMAIL = process.env.CONTACT_TO || 'madalaadithya1056@gmail.com';
 const OWNER_NAME = process.env.CONTACT_OWNER_NAME || 'Shanmukha Aditya';
 const SITE_NAME = process.env.SITE_NAME || 'Shanmukha Aditya – Portfolio';
+const API_TIMEOUT_MS = 10_000;
+
+/**
+ * Delivery provider. Hosts such as Render's free tier block outbound SMTP (ports 25/465/587),
+ * so mail can also go out over HTTPS through Brevo or Resend.
+ *   MAIL_PROVIDER=smtp | brevo | resend   (explicit)
+ *   otherwise: SMTP_HOST=console → smtp (dev), BREVO_API_KEY → brevo, RESEND_API_KEY → resend, else smtp.
+ */
+export function mailProvider() {
+  const explicit = (process.env.MAIL_PROVIDER || '').toLowerCase();
+  if (explicit) return explicit;
+  if (process.env.SMTP_HOST === 'console') return 'smtp';
+  if (process.env.BREVO_API_KEY) return 'brevo';
+  if (process.env.RESEND_API_KEY) return 'resend';
+  return 'smtp';
+}
 
 let transport = null;
 
@@ -36,7 +52,100 @@ export function getTransport() {
   return transport;
 }
 
-export const mailConfigured = () => getTransport() !== null;
+export function mailConfigured() {
+  const p = mailProvider();
+  if (p === 'brevo') return Boolean(process.env.BREVO_API_KEY);
+  if (p === 'resend') return Boolean(process.env.RESEND_API_KEY);
+  return getTransport() !== null;
+}
+
+/** `"Name" <a@b.c>` | `Name <a@b.c>` | `a@b.c` → { name?, email } */
+export function parseAddress(value) {
+  const str = String(value || '').trim();
+  const m = str.match(/^"?([^"<]*?)"?\s*<([^>]+)>$/);
+  if (m) {
+    const name = m[1].trim();
+    return name ? { name, email: m[2].trim() } : { email: m[2].trim() };
+  }
+  return { email: str };
+}
+const formatAddress = ({ name, email }) => (name ? `${name} <${email}>` : email);
+
+async function postJson(url, headers, body) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json', ...headers },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const text = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      /* non-JSON error body */
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${String(data?.message || data?.error?.message || text || '').slice(0, 300)}`);
+    return data || {};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Brevo transactional API — https://developers.brevo.com/reference/sendtransacemail */
+async function sendViaBrevo(msg) {
+  const data = await postJson(
+    process.env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email',
+    { 'api-key': process.env.BREVO_API_KEY },
+    {
+      sender: parseAddress(msg.from),
+      to: [parseAddress(msg.to)],
+      replyTo: msg.replyTo ? parseAddress(msg.replyTo) : undefined,
+      subject: msg.subject,
+      htmlContent: msg.html,
+      textContent: msg.text,
+      headers: msg.headers,
+    }
+  );
+  return { messageId: data.messageId, provider: 'brevo' };
+}
+
+/** Resend API — https://resend.com/docs/api-reference/emails/send-email */
+async function sendViaResend(msg) {
+  const data = await postJson(
+    process.env.RESEND_API_URL || 'https://api.resend.com/emails',
+    { authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+    {
+      from: formatAddress(parseAddress(msg.from)),
+      to: [parseAddress(msg.to).email],
+      reply_to: msg.replyTo ? parseAddress(msg.replyTo).email : undefined,
+      subject: msg.subject,
+      html: msg.html,
+      text: msg.text,
+      headers: msg.headers,
+    }
+  );
+  return { messageId: data.id, provider: 'resend' };
+}
+
+/** Send a fully-built message through the configured provider. */
+async function deliver(msg) {
+  const p = mailProvider();
+  if (p === 'brevo') {
+    if (!process.env.BREVO_API_KEY) throw new Error('BREVO_API_KEY not set');
+    return sendViaBrevo(msg);
+  }
+  if (p === 'resend') {
+    if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY not set');
+    return sendViaResend(msg);
+  }
+  const t = getTransport();
+  if (!t) throw new Error('SMTP not configured');
+  return t.sendMail(msg);
+}
 
 const fromAddress = () => process.env.CONTACT_FROM || `"${SITE_NAME}" <${process.env.SMTP_USER || OWNER_EMAIL}>`;
 
@@ -45,15 +154,14 @@ const fromAddress = () => process.env.CONTACT_FROM || `"${SITE_NAME}" <${process
  * we still entity-escape for the HTML part so nothing is ever interpreted as markup.
  */
 export async function sendOwnerNotification({ name, email, subject, message, meta = {} }) {
-  const t = getTransport();
-  if (!t) throw new Error('SMTP not configured');
+  if (!mailConfigured()) throw new Error('Outgoing mail is not configured');
 
   const safe = { name: escapeHtml(name), email: escapeHtml(email), subject: escapeHtml(subject), message: escapeHtml(message).replace(/\n/g, '<br>') };
   const metaText = Object.entries(meta)
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n');
 
-  return t.sendMail({
+  return deliver({
     from: fromAddress(),
     to: OWNER_EMAIL,
     replyTo: `"${name.replace(/"/g, '')}" <${email}>`,
@@ -78,8 +186,7 @@ export async function sendOwnerNotification({ name, email, subject, message, met
  * through verification but does not exist, the provider's mailer-daemon bounce lands with the owner.
  */
 export async function sendVisitorAck({ name, email, subject, message = '' }) {
-  const t = getTransport();
-  if (!t) return null;
+  if (!mailConfigured()) return null;
   const firstName = name.split(/\s+/)[0];
   const site = process.env.SITE_URL || 'https://shanmukhaaditya-portfolio.vercel.app';
   const github = process.env.OWNER_GITHUB || 'https://github.com/ShanmukhaAditya1056';
@@ -126,7 +233,7 @@ export async function sendVisitorAck({ name, email, subject, message = '' }) {
       </div>
     </div>`;
 
-  return t.sendMail({
+  return deliver({
     from: fromAddress(),
     to: email,
     replyTo: OWNER_EMAIL,

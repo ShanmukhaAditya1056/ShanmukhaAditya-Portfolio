@@ -58,28 +58,39 @@ router.post('/', contactLimiter, async (req, res, next) => {
       receivedAt: new Date().toISOString(),
     };
 
-    // 4. Deliver. Owner notification is required when SMTP is configured; the ack is best-effort.
+    // 4. Deliver. Owner notification first; the thank-you is best-effort.
+    //    A mail failure must not lose the message when the database is available (see step 5).
+    let mailed = false;
+    let mailError = null;
     if (canMail) {
-      const owner = await sendOwnerNotification({ name, email, subject, message, meta });
-      console.log('[mail] owner notified', owner?.messageId || '');
-      if (process.env.SEND_AUTO_REPLY !== 'false') {
-        sendVisitorAck({ name, email, subject, message })
-          .then((ack) => ack && console.log('[mail] auto-reply sent', ack.messageId || ''))
-          .catch((err) => console.warn('[mail] auto-reply failed:', err.message));
+      try {
+        const owner = await sendOwnerNotification({ name, email, subject, message, meta });
+        mailed = true;
+        console.log('[mail] owner notified', owner?.messageId || '');
+        if (process.env.SEND_AUTO_REPLY !== 'false') {
+          sendVisitorAck({ name, email, subject, message })
+            .then((ack) => ack && console.log('[mail] auto-reply sent', ack.messageId || ''))
+            .catch((err) => console.warn('[mail] auto-reply failed:', err.message));
+        }
+      } catch (err) {
+        mailError = err;
+        console.error('[mail] owner notification failed:', err.message);
       }
     }
 
-    // 5. Persist (best-effort when mail went out; required when it is the only channel).
+    // 5. Persist. Best-effort when mail went out; required when it is the only channel that worked.
     let id;
     if (canStore) {
       try {
         const saved = await ContactMessage.create({ name, email, subject, message, ip: meta.ip, userAgent: meta.userAgent, emailVerified: Boolean(verification.verified) });
         id = saved._id;
+        if (!mailed) console.warn('[db] stored message without email notification', String(id));
       } catch (err) {
-        if (!canMail) throw err;
+        if (!mailed) throw err;
         console.warn('[db] could not store contact message:', err.message);
       }
     }
+    if (!mailed && !id) throw mailError || new Error('No delivery channel succeeded');
 
     return ok(res, 201, { message: 'Message received.', id });
   } catch (err) {

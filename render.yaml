@@ -1,0 +1,38 @@
+# Render blueprint — one Node web service that builds the React client and serves it from Express.
+# Dashboard → New → Blueprint → pick this repo. Secrets marked sync:false are entered once in the dashboard.
+services:
+  - type: web
+    name: shanmukhaaditya-portfolio
+    runtime: node
+    plan: free
+    # Repo root (NOT server/): the server needs ../client/dist and ../shared/projects.json.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SITE_URL
+        value: https://shanmukhaaditya-portfolio.onrender.com
+      - key: MONGO_URI
+        sync: false
+      # Render's free tier blocks outbound SMTP, so mail goes out over HTTPS via Brevo (free, 300/day).
+      - key: MAIL_PROVIDER
+        value: brevo
+      - key: BREVO_API_KEY
+        sync: false
+      # Must be a sender verified in Brevo (your Gmail works).
+      - key: CONTACT_FROM
+        value: '"Shanmukha Aditya – Portfolio" <madalaadithya1056@gmail.com>'
+      - key: CONTACT_TO
+        sync: false
+      - key: SEND_AUTO_REPLY
+        value: "true"
+      - key: EMAIL_VERIFICATION_PROVIDER
+        value: abstract
+      - key: EMAIL_VERIFICATION_API_KEY
+        sync: false
+      # Only needed if the React app is hosted elsewhere (e.g. Vercel); same-origin is always allowed.
+      - key: CLIENT_ORIGIN
+        value: ""

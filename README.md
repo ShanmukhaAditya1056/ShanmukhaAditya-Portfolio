@@ -56,6 +56,29 @@ npm start          # Express serves the API and the built site on $PORT
 Deploy as a single Node service (Render, Railway, Fly.io, a VPS). Set `NODE_ENV=production`,
 `MONGO_URI` and `PORT`.
 
+### Render
+
+`render.yaml` is a Blueprint: **New → Blueprint → this repo** creates the service with the right
+settings. If you created the service by hand instead, make sure these match (Settings tab):
+
+| Setting | Value |
+|---|---|
+| Root Directory | *(empty — the repo root, not `server/`)* |
+| Build Command | `npm ci --include=dev && npm run build` |
+| Start Command | `npm start` |
+| Health Check Path | `/api/health` |
+
+`node server.js` as the start command fails with `Cannot find module /opt/render/project/src/server.js`
+because the server lives in `server/`; `npm start` runs it through the workspace. Node is pinned to 24
+via `.node-version`. Add the secrets (`MONGO_URI`, `BREVO_API_KEY`, `CONTACT_TO`,
+`EMAIL_VERIFICATION_API_KEY`) under Environment; `PORT` is provided by Render.
+
+**Email on Render:** free web services block outbound SMTP (ports 25/465/587), so Gmail SMTP times out
+there and the contact form returns 500. Set `MAIL_PROVIDER=brevo` + `BREVO_API_KEY` (free, 300 emails/day,
+HTTPS) and verify your Gmail address as a sender in Brevo; `CONTACT_FROM` must use that verified address.
+SMTP keeps working locally and on paid instances. If mail fails but MongoDB is up, the message is still
+stored and the visitor gets a success response; the failure is logged as `[mail] owner notification failed`.
+
 If you host the client separately (Vercel, Netlify):
 - set `VITE_API_URL=https://your-api.example.com` when building the client
 - set `CLIENT_ORIGIN=https://your-site.example.com` on the server so CORS allows it
@@ -99,7 +122,7 @@ Defence in depth across both layers; the glass UI is unchanged.
 - Strict CORS allowlist (`http://localhost:5173`, `https://shanmukhaaditya-portfolio.vercel.app`, the server's own origin, plus `CLIENT_ORIGIN` extras); other browser origins get 403. 10 KB JSON body limit, Helmet headers.
 - `zod` re-validation (`server/utils/contactSchema.js`) with sanitisation (`server/utils/sanitize.js`): CR/LF stripped from name/email/subject (SMTP header injection), tags stripped from the message, entities escaped in the HTML email.
 - Email verification pipeline (`server/utils/emailVerification.js`): disposable-domain blocklist (`disposable-email-domains` + extras) → DNS MX / A lookup → `verifyMailboxExists()` via AbstractAPI Email Reputation (`abstract`, default), AbstractAPI legacy Email Validation (`abstract-validation`), Hunter or ZeroBounce (`EMAIL_VERIFICATION_PROVIDER` + `EMAIL_VERIFICATION_API_KEY`, 3 s timeout). A rejected key or exhausted quota is logged once as a `[verify]` warning and the check degrades gracefully. A definite "undeliverable" returns 400 with the error on the email field; unknown/timeout falls back to the DNS + blocklist result.
-- Delivery (`server/utils/mailer.js`, Nodemailer): notification to `CONTACT_TO` with `Reply-To` set to the visitor, plus a plain-text auto-acknowledgement to the visitor (bounce trap — a non-existent mailbox that slipped through bounces back to you). `SMTP_HOST=console` prints the messages instead of sending, for local testing.
+- Delivery (`server/utils/mailer.js`; SMTP via Nodemailer, or HTTPS via Brevo / Resend with `MAIL_PROVIDER`): notification to `CONTACT_TO` with `Reply-To` set to the visitor, plus a plain-text auto-acknowledgement to the visitor (bounce trap — a non-existent mailbox that slipped through bounces back to you). `SMTP_HOST=console` prints the messages instead of sending, for local testing.
 - Messages are also stored in MongoDB when `MONGO_URI` is set (best-effort once mail has gone out).
 
 See `server/.env.example` for every variable.
