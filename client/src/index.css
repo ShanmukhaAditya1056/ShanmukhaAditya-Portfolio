@@ -179,7 +179,9 @@
   user-select: none;
   will-change: transform; /* parallax: translated by SiteBackground as the page scrolls */
   --bw: max(calc(1507 * var(--u)), calc(100vw + 37 * var(--u)));
-  --bt: calc(50vh - 651 * var(--u));
+  /* Canva framing on desktop; clamped to 0 so tall/narrow viewports (phones, tablets) never show
+     a band of the fallback colour above the photo. */
+  --bt: min(calc(50vh - 651 * var(--u)), 0px);
   width: var(--bw);
   left: calc(50vw + 18.5 * var(--u) - var(--bw) / 2);
   top: var(--bt);
