@@ -1,0 +1,422 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sky: #c0f0f7; /* "Portfolio" logo */
+  --color-cream: #fffdd0; /* in-page nav links */
+  --color-navy: #1d3a5f;
+  --color-linen: #faf0e6; /* button fill + active nav accent */
+  --color-cyan: #faf0e6; /* legacy alias — same as linen so older classes stay consistent */
+  --color-card: rgb(200 209 217 / 0.19); /* translucent cards, as on the Canva page */
+
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-logo: "Open Sans", "Montserrat", ui-sans-serif, sans-serif;
+  --font-slab: "Roboto Slab", Georgia, serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-[#2f5f8f] font-sans text-white antialiased;
+  }
+  #root {
+    container-type: inline-size;
+  }
+  ::selection {
+    background: rgb(255 253 208 / 0.45);
+    color: #000;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-cream);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+/* ---- Page: one Canva page = one viewport-filling section ---- */
+.page {
+  /* 1 canvas px. Scales with width; capped so the 768-unit canvas fits the viewport height. */
+  --u: min(calc(100cqw / 1366), calc(100vh / 768));
+  position: relative;
+  width: 100%;
+  min-height: calc(768 * var(--u));
+  background-color: #2f5f8f;
+  overflow: hidden;
+}
+
+/* The floral photo, placed where Canva places it (center 18.5u right of the canvas center,
+   top 267u above the canvas) and grown with object-fit: cover so it always fills the page
+   on viewports that are not 16:9. */
+.bgphoto {
+  position: absolute;
+  z-index: 0;
+  object-fit: cover;
+  object-position: center;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  --bw: max(calc(1507 * var(--u)), calc(100% + 37 * var(--u)));
+  --bt: calc(-267 * var(--u));
+  width: var(--bw);
+  left: calc(50% + 18.5 * var(--u) - var(--bw) / 2);
+  top: var(--bt);
+  height: max(calc(1130 * var(--u)), calc(100% - var(--bt)));
+}
+.page--first .bgphoto {
+  --bt: calc(50% - 651 * var(--u)); /* canvas is centered on the first page */
+}
+/* Desktop: every page fills the viewport. The canvas is centered on the first page
+   and top-aligned on the others, matching the Canva site. */
+.page--desktop {
+  height: 100vh;
+}
+
+/* ---- Layer 1 (z-0): photo + indigo/violet tint + subtle grid mesh ---- */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(160deg, rgb(49 31 97 / 0.3) 0%, transparent 42%),
+    linear-gradient(340deg, rgb(109 40 217 / 0.2) 0%, transparent 45%);
+}
+.page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("/assets/bg-grid.svg");
+  background-size: 96px 96px;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 85%);
+  mask-image: radial-gradient(ellipse at center, #000 40%, transparent 85%);
+}
+
+/* ---- Layer 3 (z-20): the 1366×768 content layer ---- */
+.canvas {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  top: 0;
+  width: calc(1366 * var(--u));
+  height: calc(768 * var(--u));
+  transform: translateX(-50%);
+}
+.page--first .canvas {
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ---- Shared visual pieces ---- */
+.card {
+  background: var(--color-card);
+  border-radius: calc(26 * var(--u));
+}
+
+.chip {
+  display: inline-block;
+  border: 1px solid rgb(255 255 255 / 0.4);
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+.chip:hover {
+  background: rgb(255 255 255 / 0.26);
+  border-color: rgb(255 253 208 / 0.9);
+}
+
+.input {
+  width: 100%;
+  border: 1px solid rgb(255 255 255 / 0.45);
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  border-radius: calc(10 * var(--u));
+  outline: none;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+.input::placeholder {
+  color: rgb(255 255 255 / 0.65);
+}
+.input:focus {
+  border-color: var(--color-cream);
+  background: rgb(255 255 255 / 0.2);
+}
+.input[aria-invalid="true"] {
+  border-color: #ffb4b4;
+}
+
+/* Navbar: frosted pill, sliding active highlight, glass buttons */
+.pillnav,
+.glass-card,
+.glass-btn {
+  background: rgb(11 37 69 / 0.55);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.55);
+}
+.pillnav {
+  border-radius: 999px;
+}
+.glass-card {
+  border-radius: 18px;
+}
+.pillnav-ind {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  border-radius: 999px;
+  background: rgb(250 240 230 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(250 240 230 / 0.45);
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pillnav-ind {
+    transition: none;
+  }
+}
+
+/* Nav link: white text, cyan when active, underline grows on hover/active */
+.navlink {
+  position: relative;
+  display: inline-block;
+  color: rgb(255 255 255 / 0.85);
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.navlink:hover {
+  color: #fff;
+}
+.navlink.is-active {
+  color: var(--color-linen);
+}
+.navlink.is-active::after {
+  transform: scaleX(1);
+}
+.navlink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.navlink:hover::after,
+.navlink:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Horizontal project scroller */
+.hscroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.45) transparent;
+}
+.hscroll > * {
+  scroll-snap-align: start;
+}
+.hscroll::-webkit-scrollbar {
+  height: 6px;
+}
+.hscroll::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.45);
+  border-radius: 999px;
+}
+
+/* Typewriter caret */
+.caret {
+  display: inline-block;
+  width: 0.08em;
+  min-width: 2px;
+  margin-left: 0.08em;
+  vertical-align: -0.1em;
+  background: currentColor;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Portrait entrance; --to is the resting opacity */
+.fade-up {
+  --to: 1;
+  opacity: var(--to);
+  animation: fade-up 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: var(--to);
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    animation: none;
+  }
+  .caret {
+    animation: none;
+  }
+  .navlink::after {
+    transition: none;
+  }
+}
+
+/* Hero text scrim (desktop canvas + mobile block) */
+.scrim {
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 35% 55%, rgb(5 18 38 / 0.62) 0%, rgb(5 18 38 / 0.35) 45%, transparent 75%);
+}
+.scrim-m {
+  background: linear-gradient(180deg, transparent 0%, rgb(5 18 38 / 0.5) 18%, rgb(5 18 38 / 0.5) 100%);
+}
+
+/* Buttons — all linen. Primary: solid linen; secondary: frosted linen outline. */
+.btn-cyan,
+.btn-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    transform 0.2s,
+    background-color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.btn-cyan {
+  background: var(--color-linen);
+  color: var(--color-navy);
+  box-shadow: 0 8px 24px -10px rgb(250 240 230 / 0.55);
+}
+.btn-cyan:hover {
+  background: #fff8f1;
+  transform: translateY(-1px);
+}
+.btn-glass {
+  color: var(--color-linen);
+  border: 1px solid rgb(250 240 230 / 0.55);
+  background: rgb(250 240 230 / 0.12);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.btn-glass:hover {
+  border-color: var(--color-linen);
+  background: rgb(250 240 230 / 0.24);
+  transform: translateY(-1px);
+}
+
+.btn-cyan:disabled {
+  cursor: wait;
+  opacity: 0.75;
+  transform: none;
+}
+
+/* Split glass button (e.g. Resume: view | download) */
+.btn-split {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  color: var(--color-linen);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid rgb(250 240 230 / 0.55);
+  background: rgb(250 240 230 / 0.12);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+.btn-split:hover {
+  border-color: var(--color-linen);
+  transform: translateY(-1px);
+}
+.btn-split__seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.btn-split__seg + .btn-split__seg {
+  border-left: 1px solid rgb(250 240 230 / 0.4);
+}
+.btn-split__seg:hover {
+  background: rgb(250 240 230 / 0.16);
+  color: #fff;
+}
+
+.link-cream {
+  color: var(--color-cream);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: rgb(255 253 208 / 0.5);
+}
+.link-cream:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---- Mobile (< 900px): same look, stacked flow ---- */
+.mpage {
+  position: relative;
+  z-index: 20;
+  min-height: 100vh;
+  background-image: url("/bg-flowers.png");
+  background-size: cover;
+  background-position: center;
+  padding: 88px 16px 96px; /* clears the fixed 72px navbar */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.mpage .card {
+  border-radius: 22px;
+}
+.msig {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 170px;
+  height: auto;
+  pointer-events: none;
+}

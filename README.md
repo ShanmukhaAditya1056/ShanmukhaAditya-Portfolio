@@ -1,0 +1,86 @@
+# Shanmukha Aditya – Portfolio
+
+A full-stack MERN developer portfolio that reproduces the Canva design
+(https://hedgehog-8k0gvy.my.canva.site/) as a real website: React (Vite + Tailwind CSS v4)
+on the front end, Express + MongoDB on the back end.
+
+```
+myportfolio/
+├── client/                 React app (Vite)
+│   ├── public/             bg-flowers.png, portrait.png, signature.png, favicon.svg
+│   └── src/
+│       ├── components/     Navbar (frosted pill), PortfolioFloralBackground (Framer Motion petals), Page, ContactForm, CopyButton
+│       ├── sections/       Hero, About, Skills, Projects, Contact
+│       ├── hooks/          useScrollSpy, useTypeSequence, useProjects
+│       ├── lib/u.js        design-unit helpers (1366×768 canvas → viewport)
+│       ├── data/profile.js ← your name, links, bio, stats, skills
+│       └── index.css       theme tokens, page/canvas layout, card/chip/input styles
+├── server/                 Express API
+│   ├── server.js
+│   ├── models/ContactMessage.js
+│   ├── routes/contact.js   POST /api/contact
+│   └── routes/projects.js  GET  /api/projects
+└── shared/projects.json    ← project cards (used by both API and client)
+```
+
+## How the layout works
+
+The Canva design is a 1366×768 canvas. On screens 900px and wider, each page is a
+viewport-filling section with an absolutely positioned canvas layer; every element uses the
+coordinates measured on the live Canva site, in "design units" (`--u` = one canvas pixel,
+set in `index.css`). This keeps the pages pixel-proportional at any desktop width.
+Below 900px the same content switches to a stacked mobile layout.
+
+Fonts (Google Fonts): Montserrat (headings, nav, body), Open Sans Bold ("Portfolio" logo),
+Roboto Slab (stat labels, form labels).
+
+## Quick start
+
+```bash
+npm install                          # installs client + server (npm workspaces)
+cp server/.env.example server/.env   # then set MONGO_URI
+npm run dev                          # API on :5000, site on http://localhost:5173
+```
+
+You need MongoDB for the contact form. Use a local `mongod` or a free MongoDB Atlas cluster.
+If `MONGO_URI` is missing or unreachable the site still runs, but `POST /api/contact`
+returns **503** and the form shows a "please email me directly" toast.
+
+## Production
+
+```bash
+npm run build      # builds client/dist
+npm start          # Express serves the API and the built site on $PORT
+```
+
+Deploy as a single Node service (Render, Railway, Fly.io, a VPS). Set `NODE_ENV=production`,
+`MONGO_URI` and `PORT`.
+
+If you host the client separately (Vercel, Netlify):
+- set `VITE_API_URL=https://your-api.example.com` when building the client
+- set `CLIENT_ORIGIN=https://your-site.example.com` on the server so CORS allows it
+
+## Personalise
+
+| What | Where |
+|---|---|
+| Email, GitHub, LinkedIn, location, bio, stats, roles | `client/src/data/profile.js` |
+| Portrait | `client/public/portrait.png` (transparent cutout, ~4:5) |
+| Background photo | `client/public/bg-flowers.png` (the colour-graded version from the Canva site) |
+| Signature | `client/public/signature.png` |
+| Resume (hero "Resume" view/download button) | `client/public/resume.pdf` — the download name is `resumeFileName` in `profile.js` |
+| Floating petal artwork | `client/public/assets/petal.png` (one transparent PNG; count/size/speed live in `PortfolioFloralBackground.jsx`) |
+| Project cards, Live Demo / GitHub links | `shared/projects.json` (`demoUrl`, `repoUrl`; empty = greyed-out "coming soon") |
+| Colours, card/chip styling | `client/src/index.css` (`@theme` block) |
+| Element positions on the desktop canvas | the `box(x, y, w, h)` calls in each section (canvas units) |
+
+## API
+
+| Method | Path | Notes |
+|---|---|---|
+| `POST` | `/api/contact` | `{ name, email, subject, message }`. 400 with per-field errors on invalid input, 429 when rate limited (5 per 15 min per IP), 503 if the DB is down, 201 when saved. |
+| `GET` | `/api/projects` | Returns the contents of `shared/projects.json`. |
+| `GET` | `/api/health` | Status and DB connection state. |
+
+Security: Helmet headers (including CSP), 10 KB JSON body limit, rate limiting, server-side
+validation that mirrors the client, a honeypot field against bots, Mongoose schema constraints.

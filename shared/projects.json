@@ -1,0 +1,78 @@
+[
+  {
+    "id": "cyberguard-ai",
+    "title": "CyberGuard AI",
+    "outcome": "Hybrid mobile and web security platform delivering real-time phishing URL detection via Google Safe Browsing APIs, multi-hop redirect resolution, and Wi-Fi security inspection.",
+    "stack": [
+      "React",
+      "Flutter",
+      "Node.js",
+      "Safe Browsing API"
+    ],
+    "icon": "shield",
+    "accent": [
+      "#00F5D4",
+      "#0EA5E9"
+    ],
+    "demoUrl": "",
+    "repoUrl": "https://github.com/ShanmukhaAditya1056/cyberguardaimobile"
+  },
+  {
+    "id": "mulegraph-ai",
+    "title": "MuleGraph AI",
+    "outcome": "Financial intelligence and anti-mule fraud investigation dashboard featuring interactive transaction network visualization, device fingerprinting, and immutable audit logging.",
+    "stack": [
+      "MERN Stack",
+      "Graph Visualization",
+      "JWT",
+      "Tailwind CSS"
+    ],
+    "icon": "network",
+    "accent": [
+      "#EC4899",
+      "#8B5CF6"
+    ],
+    "demoUrl": "",
+    "repoUrl": "https://github.com/ShanmukhaAditya1056/mulegraph"
+  },
+  {
+    "id": "multi-college-library",
+    "title": "Multi-College Library Management System",
+    "outcome": "Centralized academic inventory and circulation platform supporting multi-tenant role-based access control and automated borrowing workflows.",
+    "stack": [
+      "React.js",
+      "Node.js",
+      "Express.js",
+      "MongoDB",
+      "JWT"
+    ],
+    "icon": "library",
+    "accent": [
+      "#F59E0B",
+      "#EC4899"
+    ],
+    "demoUrl": "",
+    "repoUrl": ""
+  },
+  {
+    "id": "devtrack-se-platform",
+    "title": "DevTrack — Software Engineering Lifecycle Platform",
+    "outcome": "Full-stack SDLC management platform featuring MoSCoW prioritization, agile Kanban sprints, bidirectional traceability matrices, QA test telemetry, and CI/CD pipeline simulations.",
+    "stack": [
+      "JavaScript (ES6+)",
+      "Tailwind CSS",
+      "Vite",
+      "Prisma",
+      "PostgreSQL",
+      "Docker",
+      "Firebase"
+    ],
+    "icon": "layers",
+    "accent": [
+      "#3B82F6",
+      "#10B981"
+    ],
+    "demoUrl": "https://devtrack-ten-chi.vercel.app",
+    "repoUrl": "https://github.com/ShanmukhaAditya1056/CSA1001-SE"
+  }
+]
