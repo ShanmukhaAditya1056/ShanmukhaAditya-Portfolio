@@ -4,12 +4,16 @@
   --color-sky: #c0f0f7; /* "Portfolio" logo */
   --color-cream: #fffdd0; /* in-page nav links */
   --color-navy: #1d3a5f;
-  --color-linen: #faf0e6; /* button fill + active nav accent */
-  --color-cyan: #faf0e6; /* legacy alias — same as linen so older classes stay consistent */
+  --color-linen: #f3efea; /* "oat milk": primary button fill + active nav accent */
+  --color-linen-hover: #e6dfd5;
+  --color-ink-text: #1e293b; /* high-contrast text on oat-milk buttons */
+  --color-cyan: #f3efea; /* legacy alias — same as linen so older classes stay consistent */
   --color-card: rgb(200 209 217 / 0.19); /* translucent cards, as on the Canva page */
 
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-logo: "Open Sans", "Montserrat", ui-sans-serif, sans-serif;
+  --font-conquer: "Caprasimo", "Fraunces", Georgia, serif; /* closest free match to Canva's Roca One */
+  --color-conquer: #632f3b;
   --font-slab: "Roboto Slab", Georgia, serif;
 }
 
@@ -47,30 +51,7 @@
   position: relative;
   width: 100%;
   min-height: calc(768 * var(--u));
-  background-color: #2f5f8f;
-  overflow: hidden;
-}
-
-/* The floral photo, placed where Canva places it (center 18.5u right of the canvas center,
-   top 267u above the canvas) and grown with object-fit: cover so it always fills the page
-   on viewports that are not 16:9. */
-.bgphoto {
-  position: absolute;
-  z-index: 0;
-  object-fit: cover;
-  object-position: center;
-  max-width: none;
-  pointer-events: none;
-  user-select: none;
-  --bw: max(calc(1507 * var(--u)), calc(100% + 37 * var(--u)));
-  --bt: calc(-267 * var(--u));
-  width: var(--bw);
-  left: calc(50% + 18.5 * var(--u) - var(--bw) / 2);
-  top: var(--bt);
-  height: max(calc(1130 * var(--u)), calc(100% - var(--bt)));
-}
-.page--first .bgphoto {
-  --bt: calc(50% - 651 * var(--u)); /* canvas is centered on the first page */
+  overflow: hidden; /* transparent: the fixed .site-bg shows through every page with no seams */
 }
 /* Desktop: every page fills the viewport. The canvas is centered on the first page
    and top-aligned on the others, matching the Canva site. */
@@ -78,23 +59,144 @@
   height: 100vh;
 }
 
-/* ---- Layer 1 (z-0): photo + indigo/violet tint + subtle grid mesh ---- */
-.page::before {
+/* ---- Hero mantra: "Perseverance · Conquer · Mastery" (from the Canva page) ----
+   Layering inside the hero: mantra z-1 → portrait z-2 → outline + text / CTAs z-3. */
+.mantra-layer {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+/* Curved "Conquer" (SVG textPath). Fill version sits behind the portrait (z-1 via .mantra-layer);
+   the outline duplicate sits in front (z-3) so a faint trace follows the letters across the hair. */
+.conquer-arc {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: 50% 70%;
+  /* "clarify": comes into focus from a soft blur */
+  animation: clarify 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+}
+.conquer-arc text {
+  font-family: var(--font-conquer);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.conquer-arc--fill text {
+  fill: var(--color-conquer);
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.22));
+}
+.conquer-arc--outline {
+  z-index: 3;
+}
+.conquer-arc--outline text {
+  fill: none;
+  stroke: var(--color-conquer);
+  stroke-opacity: 0.45;
+  stroke-width: 1.5px;
+  paint-order: stroke;
+}
+@keyframes clarify {
+  0% {
+    opacity: 0;
+    filter: blur(18px);
+    transform: scale(1.08);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+.mantra__side {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: #e1ba3a;
+  white-space: nowrap;
+  animation: side-in 1s cubic-bezier(0.22, 1, 0.36, 1) 1s both;
+}
+.mantra__side--l {
+  --dx: -28px;
+}
+.mantra__side--r {
+  --dx: 28px;
+}
+@keyframes side-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--dx));
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .conquer-arc,
+  .mantra__side {
+    animation: none;
+  }
+}
+
+/* Hero portrait: soft fade at the bottom so the cutout blends into the canvas instead of ending flat */
+.portrait-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+}
+
+/* Contact form: submit button after a successful send — a calm confirmation, not a greyed box */
+.btn-cyan.is-sent:disabled {
+  opacity: 1;
+  cursor: default;
+  transform: none;
+  background: var(--color-linen);
+}
+
+/* ---- Layer 1 (z-0): ONE fixed background for the whole site — photo + indigo/violet tint + grid.
+   Framed exactly as the Canva hero (photo centre 18.5u right of the canvas centre, 267u above it)
+   and grown with object-fit: cover so it fills any viewport. Being fixed, pages never show a seam. */
+.site-bg {
+  --u: min(calc(100vw / 1366), calc(100vh / 768));
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: #2f5f8f;
+}
+.site-bg__photo {
+  position: absolute;
+  object-fit: cover;
+  object-position: center;
+  max-width: none;
+  user-select: none;
+  will-change: transform; /* parallax: translated by SiteBackground as the page scrolls */
+  --bw: max(calc(1507 * var(--u)), calc(100vw + 37 * var(--u)));
+  --bt: calc(50vh - 651 * var(--u));
+  width: var(--bw);
+  left: calc(50vw + 18.5 * var(--u) - var(--bw) / 2);
+  top: var(--bt);
+  height: max(calc(1130 * var(--u)), calc(100vh - var(--bt)));
+}
+.site-bg::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0;
-  pointer-events: none;
   background:
     linear-gradient(160deg, rgb(49 31 97 / 0.3) 0%, transparent 42%),
     linear-gradient(340deg, rgb(109 40 217 / 0.2) 0%, transparent 45%);
 }
-.page::after {
+.site-bg::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0;
-  pointer-events: none;
   background-image: url("/assets/bg-grid.svg");
   background-size: 96px 96px;
   opacity: 0.07;
@@ -324,23 +426,23 @@
 }
 .btn-cyan {
   background: var(--color-linen);
-  color: var(--color-navy);
-  box-shadow: 0 8px 24px -10px rgb(250 240 230 / 0.55);
+  color: var(--color-ink-text);
+  box-shadow: 0 8px 24px -10px rgb(243 239 234 / 0.55);
 }
 .btn-cyan:hover {
-  background: #fff8f1;
+  background: var(--color-linen-hover);
   transform: translateY(-1px);
 }
 .btn-glass {
   color: var(--color-linen);
-  border: 1px solid rgb(250 240 230 / 0.55);
-  background: rgb(250 240 230 / 0.12);
+  border: 1px solid rgb(243 239 234 / 0.55);
+  background: rgb(243 239 234 / 0.12);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 .btn-glass:hover {
   border-color: var(--color-linen);
-  background: rgb(250 240 230 / 0.24);
+  background: rgb(243 239 234 / 0.24);
   transform: translateY(-1px);
 }
 
@@ -358,8 +460,8 @@
   color: var(--color-linen);
   font-weight: 600;
   white-space: nowrap;
-  border: 1px solid rgb(250 240 230 / 0.55);
-  background: rgb(250 240 230 / 0.12);
+  border: 1px solid rgb(243 239 234 / 0.55);
+  background: rgb(243 239 234 / 0.12);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition:
@@ -369,6 +471,21 @@
 .btn-split:hover {
   border-color: var(--color-linen);
   transform: translateY(-1px);
+}
+/* Solid oat-milk variant (navbar) — matches the primary buttons */
+.btn-split--solid {
+  background: var(--color-linen);
+  color: var(--color-ink-text);
+  font-weight: 600;
+  border-color: var(--color-linen);
+  box-shadow: 0 8px 24px -10px rgb(243 239 234 / 0.55);
+}
+.btn-split--solid .btn-split__seg + .btn-split__seg {
+  border-left-color: rgb(30 41 59 / 0.25);
+}
+.btn-split--solid .btn-split__seg:hover {
+  background: var(--color-linen-hover);
+  color: var(--color-ink-text);
 }
 .btn-split__seg {
   display: inline-flex;
@@ -401,9 +518,6 @@
   position: relative;
   z-index: 20;
   min-height: 100vh;
-  background-image: url("/bg-flowers.png");
-  background-size: cover;
-  background-position: center;
   padding: 88px 16px 96px; /* clears the fixed 72px navbar */
   display: flex;
   flex-direction: column;
@@ -411,12 +525,4 @@
 }
 .mpage .card {
   border-radius: 22px;
-}
-.msig {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  width: 170px;
-  height: auto;
-  pointer-events: none;
 }

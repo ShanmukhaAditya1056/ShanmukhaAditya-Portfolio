@@ -4,24 +4,26 @@ import CopyButton from '../components/CopyButton.jsx';
 import ContactForm from '../components/ContactForm.jsx';
 import { GitHubIcon, LinkedInIcon } from '../components/BrandIcons.jsx';
 import { profile } from '../data/profile.js';
+import { useContactEmail } from '../lib/contactEmail.js';
 import { box, u } from '../lib/u.js';
 
 const stripProtocol = (url) => url.replace(/^https?:\/\/(www\.)?/, '');
 
-const CHANNELS = [
-  { label: 'Email', value: profile.email, href: `mailto:${profile.email}`, copy: profile.email, Icon: Mail },
-  { label: 'GitHub', value: stripProtocol(profile.github), href: profile.github, copy: profile.github, Icon: GitHubIcon, external: true },
-  { label: 'LinkedIn', value: stripProtocol(profile.linkedin), href: profile.linkedin, copy: profile.linkedin, Icon: LinkedInIcon, external: true },
-  { label: 'Location', value: profile.location, copy: profile.location, Icon: MapPin },
-];
-
 const HEADLINE = 'Looking for an engineer who takes craft and security seriously?';
 
 function Channels({ scaled }) {
+  // Assembled client-side after mount — the raw page source never contains the full address.
+  const email = useContactEmail();
+  const channels = [
+    { label: 'Email', value: email, href: email ? `mailto:${email}` : undefined, copy: email, Icon: Mail },
+    { label: 'GitHub', value: stripProtocol(profile.github), href: profile.github, copy: profile.github, Icon: GitHubIcon, external: true },
+    { label: 'LinkedIn', value: stripProtocol(profile.linkedin), href: profile.linkedin, copy: profile.linkedin, Icon: LinkedInIcon, external: true },
+    { label: 'Location', value: profile.location, copy: profile.location, Icon: MapPin },
+  ].filter((c) => c.label === 'Email' || c.value); // email renders (blank until mounted); others only when set
   const iconStyle = scaled ? { width: u(20), height: u(20) } : { width: 20, height: 20 };
   return (
     <ul className="flex flex-col" style={scaled ? { gap: u(10) } : { gap: 12 }}>
-      {CHANNELS.map(({ label, value, href, copy, Icon, external }) => (
+      {channels.map(({ label, value, href, copy, Icon, external }) => (
         <li
           key={label}
           className="flex items-center rounded-full border border-white/25 bg-white/10"
@@ -42,7 +44,7 @@ function Channels({ scaled }) {
                 {value}
               </a>
             ) : (
-              <p className="truncate font-medium text-white" style={scaled ? { fontSize: u(16.5), lineHeight: u(22) } : { fontSize: 16 }}>
+              <p className="truncate font-medium text-white" style={scaled ? { fontSize: u(16.5), lineHeight: u(22), minHeight: u(22) } : { fontSize: 16, minHeight: 22 }}>
                 {value}
               </p>
             )}

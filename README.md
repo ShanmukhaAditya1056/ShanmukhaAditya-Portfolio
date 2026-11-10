@@ -78,9 +78,28 @@ If you host the client separately (Vercel, Netlify):
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/api/contact` | `{ name, email, subject, message }`. 400 with per-field errors on invalid input, 429 when rate limited (5 per 15 min per IP), 503 if the DB is down, 201 when saved. |
+| `POST` | `/api/contact` | `{ name, email, subject, message, company_website? }`. 201 when delivered; 400 `{ error, errors: { field } }` on invalid input or an unverifiable email; 403 from an unlisted browser origin; 413 over 10 KB; 429 after 3 requests / 15 min per IP; 503 when neither SMTP nor MongoDB is configured. |
 | `GET` | `/api/projects` | Returns the contents of `shared/projects.json`. |
 | `GET` | `/api/health` | Status and DB connection state. |
 
-Security: Helmet headers (including CSP), 10 KB JSON body limit, rate limiting, server-side
-validation that mirrors the client, a honeypot field against bots, Mongoose schema constraints.
+## Contact form security
+
+Defence in depth across both layers; the glass UI is unchanged.
+
+**Client** (`client/src/components/ContactForm.jsx`)
+- Off-screen honeypot `company_website` (tabIndex −1, `aria-hidden`); a filled honeypot fakes success and never hits the API.
+- Time-to-submit guard: submissions under 2.5 s after mount are rejected with a gentle prompt to retry.
+- Validation mirrors the server: name 2–80 (no HTML), email strict syntax ≤ 100 and no CR/LF, subject 3–120 single-line, message 10–2000.
+- Typo hints for common domains ("Did you mean @gmail.com?") in `client/src/lib/emailTypos.js`.
+- Button locks while sending; a 30 s cooldown is kept in `localStorage`.
+- The contact email is stored in parts (`profile.emailParts`) and joined at runtime (`client/src/lib/contactEmail.js`), so the full address never appears in the page source or JS bundle.
+
+**Server** (`server/routes/contact.js`)
+- `express-rate-limit`: 3 requests / 15 min per IP → 429.
+- Strict CORS allowlist (`http://localhost:5173`, `https://shanmukhaaditya-portfolio.vercel.app`, the server's own origin, plus `CLIENT_ORIGIN` extras); other browser origins get 403. 10 KB JSON body limit, Helmet headers.
+- `zod` re-validation (`server/utils/contactSchema.js`) with sanitisation (`server/utils/sanitize.js`): CR/LF stripped from name/email/subject (SMTP header injection), tags stripped from the message, entities escaped in the HTML email.
+- Email verification pipeline (`server/utils/emailVerification.js`): disposable-domain blocklist (`disposable-email-domains` + extras) → DNS MX / A lookup → `verifyMailboxExists()` via AbstractAPI Email Reputation (`abstract`, default), AbstractAPI legacy Email Validation (`abstract-validation`), Hunter or ZeroBounce (`EMAIL_VERIFICATION_PROVIDER` + `EMAIL_VERIFICATION_API_KEY`, 3 s timeout). A rejected key or exhausted quota is logged once as a `[verify]` warning and the check degrades gracefully. A definite "undeliverable" returns 400 with the error on the email field; unknown/timeout falls back to the DNS + blocklist result.
+- Delivery (`server/utils/mailer.js`, Nodemailer): notification to `CONTACT_TO` with `Reply-To` set to the visitor, plus a plain-text auto-acknowledgement to the visitor (bounce trap — a non-existent mailbox that slipped through bounces back to you). `SMTP_HOST=console` prints the messages instead of sending, for local testing.
+- Messages are also stored in MongoDB when `MONGO_URI` is set (best-effort once mail has gone out).
+
+See `server/.env.example` for every variable.

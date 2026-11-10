@@ -31,17 +31,13 @@ function Links({ project, scaled }) {
         GitHub
         <span className="sr-only"> repository for {project.title} (opens in a new tab)</span>
       </a>
-      {project.demoUrl ? (
+      {/* Only rendered when a deployment exists — no dead "Live Demo" pills */}
+      {project.demoUrl && (
         <a href={project.demoUrl} target="_blank" rel="noopener noreferrer" className="btn-glass rounded-full" style={pill}>
           <ExternalLink style={iconStyle} aria-hidden="true" />
           Live Demo
           <span className="sr-only"> of {project.title} (opens in a new tab)</span>
         </a>
-      ) : (
-        <span className="btn-glass rounded-full opacity-55" aria-disabled="true" title="Live demo coming soon" style={pill}>
-          <ExternalLink style={iconStyle} aria-hidden="true" />
-          Live Demo
-        </span>
       )}
     </div>
   );

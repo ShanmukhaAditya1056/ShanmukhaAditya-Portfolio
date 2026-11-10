@@ -13,7 +13,9 @@ function makePetal(id) {
   return {
     id,
     fromLeft,
-    y: rand(4, 92), // % down the viewport
+    // Keep the middle band clear so petals never sit on the headline or the portrait's face:
+    // 60% drift across the top of the viewport, 40% across the bottom.
+    y: Math.random() < 0.6 ? rand(3, 27) : rand(71, 95),
     delay: rand(-20, 0), // negative offset → petals are already spread across the screen on first paint
     duration: 16 + (1 - depth) * 12 + rand(0, 4), // seconds for one side-to-side pass
     size: 10 + depth * 14, // small: 10–24px wide

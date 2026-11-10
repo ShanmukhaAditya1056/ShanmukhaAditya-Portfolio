@@ -1,4 +1,3 @@
-import { profile } from '../data/profile.js';
 import { box, u, useDesktop } from '../lib/u.js';
 
 /** Centered section heading used on the Skills / Projects / Contact pages. */
@@ -15,8 +14,7 @@ export function PageHeading({ children, id }) {
 }
 
 /**
- * One Canva page: viewport-filling section with the floral background,
- * the content layer and the gold signature.
+ * One Canva page: viewport-filling section over the shared fixed background, holding the content layer.
  * `children` is the exact desktop canvas; `mobile` is the stacked fallback.
  */
 export default function Page({ id, label, children, mobile }) {
@@ -29,29 +27,7 @@ export default function Page({ id, label, children, mobile }) {
       aria-label={label}
       className={`page ${desktop ? 'page--desktop' : ''} ${desktop && first ? 'page--first' : ''}`}
     >
-      {desktop ? (
-        <>
-          {/* Background photo, positioned by .bgphoto in index.css relative to the page. */}
-          <img src={profile.background} alt="" aria-hidden="true" width="1023" height="767" className="bgphoto" />
-          <div className="canvas">
-            {children}
-            <img
-              src={profile.signature}
-              alt=""
-              aria-hidden="true"
-              width="800"
-              height="206"
-              className="pointer-events-none select-none"
-              style={box(991, 645, 302, 78)}
-            />
-          </div>
-        </>
-      ) : (
-        <div className="mpage">
-          {mobile ?? children}
-          <img src={profile.signature} alt="" aria-hidden="true" width="800" height="206" className="msig" />
-        </div>
-      )}
+      {desktop ? <div className="canvas">{children}</div> : <div className="mpage">{mobile ?? children}</div>}
     </section>
   );
 }

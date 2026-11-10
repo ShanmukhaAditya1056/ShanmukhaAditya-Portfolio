@@ -15,7 +15,10 @@ export default function Skills() {
           <h3 className="font-bold text-white" style={{ fontSize: u(25), lineHeight: u(32), letterSpacing: u(1.5) }}>
             {group.title}
           </h3>
-          <ul className="flex flex-wrap" style={{ gap: u(11), marginTop: u(24) }}>
+          <p className="text-white/75" style={{ fontSize: u(15.5), lineHeight: u(22), marginTop: u(6) }}>
+            {group.blurb}
+          </p>
+          <ul className="flex flex-wrap" style={{ gap: u(11), marginTop: u(22) }}>
             {group.skills.map((skill) => (
               <li key={skill} className="chip" style={{ fontSize: u(17), lineHeight: u(22), padding: `${u(8)} ${u(16)}` }}>
                 {skill}
@@ -33,6 +36,7 @@ export default function Skills() {
       {skillGroups.map((group) => (
         <article key={group.title} className="card px-5 py-6">
           <h3 className="text-[20px] font-bold tracking-wide text-white">{group.title}</h3>
+          <p className="mt-1 text-[14px] leading-snug text-white/75">{group.blurb}</p>
           <ul className="mt-4 flex flex-wrap gap-2.5">
             {group.skills.map((skill) => (
               <li key={skill} className="chip px-3.5 py-1.5 text-[15px]">

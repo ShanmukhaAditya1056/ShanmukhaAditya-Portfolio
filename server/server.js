@@ -12,10 +12,12 @@ import projectsRouter from './routes/projects.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 5000;
 const MONGO_URI = process.env.MONGO_URI;
-const CLIENT_ORIGIN = (process.env.CLIENT_ORIGIN || '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+// Strict CORS allowlist: dev + production origins, plus any extras from CLIENT_ORIGIN (comma-separated).
+const ALLOWED_ORIGINS = new Set(
+  ['http://localhost:5173', 'https://shanmukhaaditya-portfolio.vercel.app', ...(process.env.CLIENT_ORIGIN || '').split(',')]
+    .map((o) => o.trim())
+    .filter(Boolean)
+);
 
 // Fail fast instead of queueing queries while MongoDB is unreachable.
 mongoose.set('bufferCommands', false);
@@ -26,10 +28,32 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 app.use(helmet());
-if (CLIENT_ORIGIN.length > 0) {
-  app.use('/api', cors({ origin: CLIENT_ORIGIN, methods: ['GET', 'POST'] }));
-}
-app.use(express.json({ limit: '10kb' }));
+/**
+ * An Origin is accepted when it is on the allowlist or when it is this very server
+ * (Express serving client/dist — browsers send Origin on same-origin POSTs too).
+ * Requests with no Origin header (curl, server-to-server) are left to the rate limiter + validation.
+ */
+const originAllowed = (req, origin) => {
+  if (!origin) return true;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  const self = `${req.protocol}://${req.get('host')}`;
+  return origin === self;
+};
+
+app.use('/api', (req, res, next) =>
+  cors({
+    origin: (origin, cb) => cb(null, originAllowed(req, origin)),
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+    maxAge: 600,
+  })(req, res, next)
+);
+// Belt and braces: a browser POST from an unlisted origin gets an explicit 403, not just missing CORS headers.
+app.post('/api/*', (req, res, next) => {
+  if (!originAllowed(req, req.get('origin'))) return res.status(403).json({ success: false, error: 'Origin not allowed.' });
+  return next();
+});
+app.use(express.json({ limit: '10kb', type: 'application/json' }));
 
 // ---- API ----
 app.get('/api/health', (_req, res) => {
@@ -59,22 +83,22 @@ if (fs.existsSync(clientDist)) {
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   if (err.type === 'entity.parse.failed') {
-    return res.status(400).json({ success: false, message: 'Malformed JSON body.' });
+    return res.status(400).json({ success: false, error: 'Malformed JSON body.' });
   }
   if (err.type === 'entity.too.large') {
-    return res.status(413).json({ success: false, message: 'Payload too large.' });
+    return res.status(413).json({ success: false, error: 'Payload too large.' });
   }
   if (err.name === 'ValidationError') {
-    return res.status(400).json({ success: false, message: 'Validation failed.' });
+    return res.status(400).json({ success: false, error: 'Validation failed.' });
   }
   console.error(err);
-  return res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' });
+  return res.status(500).json({ success: false, error: 'Something went wrong. Please try again later.' });
 });
 
 // ---- Boot ----
 async function connectDatabase() {
   if (!MONGO_URI) {
-    console.warn('[db] MONGO_URI is not set — contact form submissions will return 503.');
+    console.warn('[db] MONGO_URI is not set — messages will only be emailed (503 if SMTP is also unset).');
     return;
   }
   try {
@@ -89,6 +113,9 @@ mongoose.connection.on('disconnected', () => console.warn('[db] Disconnected'));
 
 const server = app.listen(PORT, () => {
   console.log(`[api] Listening on http://localhost:${PORT}`);
+  console.log(`[api] CORS allowlist: ${[...ALLOWED_ORIGINS].join(', ')}`);
+  if (!process.env.SMTP_HOST) console.warn('[mail] SMTP_* not set — contact emails will not be sent.');
+  if (!process.env.EMAIL_VERIFICATION_API_KEY) console.warn('[mail] EMAIL_VERIFICATION_API_KEY not set — mailbox existence check falls back to MX + disposable list.');
 });
 connectDatabase();
 
