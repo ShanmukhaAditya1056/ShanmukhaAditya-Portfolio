@@ -1,8 +1,10 @@
-import { useRef } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, ExternalLink, Layers } from 'lucide-react';
 import Page, { PageHeading } from '../components/Page.jsx';
+import ArchitectureModal from '../components/ArchitectureModal.jsx';
 import { GitHubIcon } from '../components/BrandIcons.jsx';
 import { profile } from '../data/profile.js';
+import { projectArchitecture } from '../data/projectArchitectureData.js';
 import useProjects from '../hooks/useProjects.js';
 import { box, u } from '../lib/u.js';
 
@@ -24,6 +26,8 @@ function useScroller() {
 function Links({ project, scaled }) {
   const iconStyle = scaled ? { width: u(16), height: u(16) } : { width: 16, height: 16 };
   const pill = scaled ? { fontSize: u(15), lineHeight: u(20), padding: `${u(9)} ${u(18)}` } : { fontSize: 14, padding: '9px 16px' };
+  const architecture = projectArchitecture[project.id];
+  const [archOpen, setArchOpen] = useState(false);
   return (
     <div className="flex flex-wrap items-center" style={scaled ? { gap: u(12) } : { gap: 10 }}>
       <a href={repoLink(project)} target="_blank" rel="noopener noreferrer" className="btn-cyan rounded-full" style={pill}>
@@ -38,6 +42,17 @@ function Links({ project, scaled }) {
           Live Demo
           <span className="sr-only"> of {project.title} (opens in a new tab)</span>
         </a>
+      )}
+      {/* "View Architecture" — only for projects with an entry in projectArchitectureData.js */}
+      {architecture && (
+        <>
+          <button type="button" onClick={() => setArchOpen(true)} className="btn-glass rounded-full" style={pill} aria-haspopup="dialog">
+            <Layers style={iconStyle} aria-hidden="true" />
+            Architecture
+            <span className="sr-only"> of {project.title}</span>
+          </button>
+          <ArchitectureModal open={archOpen} onClose={() => setArchOpen(false)} project={project} data={architecture} />
+        </>
       )}
     </div>
   );
