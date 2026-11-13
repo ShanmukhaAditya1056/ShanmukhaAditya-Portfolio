@@ -22,7 +22,7 @@ export const profile = {
 
 export const stats = [
   { value: '12', label: 'Technologies' },
-  { value: '15+', label: 'APIs Shipped' },
+  { value: '2', label: 'Internships' },
   { value: '3+', label: 'Years Coding' },
   { value: '5+', label: 'Projects Built' },
 ];

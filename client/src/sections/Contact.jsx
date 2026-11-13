@@ -1,4 +1,4 @@
-import { Mail, MapPin } from 'lucide-react';
+import { Download, FileText, Mail, MapPin } from 'lucide-react';
 import Page, { PageHeading } from '../components/Page.jsx';
 import CopyButton from '../components/CopyButton.jsx';
 import ContactForm from '../components/ContactForm.jsx';
@@ -56,6 +56,29 @@ function Channels({ scaled }) {
   );
 }
 
+/** Mobile only: the navbar drawer has no Resume entry, so it lives here beside the contact channels. */
+function ResumeCard() {
+  return (
+    <div className="card px-5 py-5 min-[900px]:hidden" aria-labelledby="resume-card-title">
+      <p id="resume-card-title" className="font-slab text-[11px] uppercase tracking-[0.1em] text-white/80">
+        Resume
+      </p>
+      <p className="mt-1 text-[16px] font-semibold text-white">{profile.resumeFileName.replace(/\.pdf$/i, '').replace(/-/g, ' ')}</p>
+      <div className="mt-4 flex gap-2.5">
+        <a href={profile.resume} target="_blank" rel="noopener noreferrer" className="btn-cyan flex-1 rounded-full py-2.5 text-[15px]">
+          <FileText size={16} aria-hidden="true" />
+          View Resume
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
+        <a href={profile.resume} download={profile.resumeFileName} className="btn-glass rounded-full px-4 py-2.5 text-[15px]" aria-label="Download resume">
+          <Download size={16} aria-hidden="true" />
+          Download
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function Contact() {
   const desktop = (
     <>
@@ -87,6 +110,7 @@ export default function Contact() {
           <Channels />
         </div>
       </div>
+      <ResumeCard />
       <div className="card px-5 py-6">
         <ContactForm />
       </div>

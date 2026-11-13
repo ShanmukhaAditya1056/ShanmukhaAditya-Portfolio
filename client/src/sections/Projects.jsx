@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ExternalLink, Layers } from 'lucide-react';
 import Page, { PageHeading } from '../components/Page.jsx';
 import ArchitectureModal from '../components/ArchitectureModal.jsx';
+import { OPEN_ARCHITECTURE_EVENT } from '../components/CommandPalette.jsx';
 import { GitHubIcon } from '../components/BrandIcons.jsx';
 import { profile } from '../data/profile.js';
 import { projectArchitecture } from '../data/projectArchitectureData.js';
-import useProjects from '../hooks/useProjects.js';
+import usePortfolioProjects from '../hooks/usePortfolioProjects.js';
 import { box, u } from '../lib/u.js';
 
 /** GitHub link for a card: its own repoUrl, or <your GitHub>/<project id>. */
@@ -28,6 +29,13 @@ function Links({ project, scaled }) {
   const pill = scaled ? { fontSize: u(15), lineHeight: u(20), padding: `${u(9)} ${u(18)}` } : { fontSize: 14, padding: '9px 16px' };
   const architecture = projectArchitecture[project.id];
   const [archOpen, setArchOpen] = useState(false);
+  // The command palette ("Inspect … Architecture") asks the matching card to open its dialog.
+  useEffect(() => {
+    if (!architecture) return undefined;
+    const onOpen = (e) => e.detail?.id === project.id && setArchOpen(true);
+    window.addEventListener(OPEN_ARCHITECTURE_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_ARCHITECTURE_EVENT, onOpen);
+  }, [architecture, project.id]);
   return (
     <div className="flex flex-wrap items-center" style={scaled ? { gap: u(12) } : { gap: 10 }}>
       <a href={repoLink(project)} target="_blank" rel="noopener noreferrer" className="btn-cyan rounded-full" style={pill}>
@@ -76,7 +84,7 @@ function ArrowButton({ dir, onClick, scaled }) {
 }
 
 export default function Projects() {
-  const projects = useProjects();
+  const projects = usePortfolioProjects();
   const { ref, scrollByCard } = useScroller();
 
   const desktop = (

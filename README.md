@@ -81,6 +81,7 @@ stored and the visitor gets a success response; the failure is logged as `[mail]
 
 If you host the client separately (Vercel, Netlify):
 - set `VITE_API_URL=https://your-api.example.com` when building the client
+- set `VITE_GITHUB_USER=<github-username>` to pull repositories from a different account than the one linked in `client/src/data/profile.js`
 - set `CLIENT_ORIGIN=https://your-site.example.com` on the server so CORS allows it
 
 ## Personalise
@@ -94,6 +95,7 @@ If you host the client separately (Vercel, Netlify):
 | Resume (hero "Resume" view/download button) | `client/public/resume.pdf` — the download name is `resumeFileName` in `profile.js` |
 | Floating petal artwork | `client/public/assets/petal.png` (one transparent PNG; count/size/speed live in `PortfolioFloralBackground.jsx`) |
 | Project cards, Live Demo / GitHub links | `shared/projects.json` (`demoUrl`, `repoUrl`; empty = greyed-out "coming soon") |
+| Extra project cards pulled from GitHub | add the `portfolio` topic to any public repo on the account in `profile.js`. Its name becomes the title (`ai-threat-scanner` → *AI Threat Scanner*), its other topics become the tech pills (primary language if none), its description the summary, its Homepage the Live Demo link. Curated projects always stay first (`client/src/lib/githubProjects.js`) |
 | Colours, card/chip styling | `client/src/index.css` (`@theme` block) |
 | Element positions on the desktop canvas | the `box(x, y, w, h)` calls in each section (canvas units) |
 

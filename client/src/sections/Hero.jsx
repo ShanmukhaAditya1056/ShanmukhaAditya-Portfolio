@@ -150,7 +150,7 @@ export default function Hero() {
         alt={`Portrait of ${profile.name}`}
         width="1127"
         height="1396"
-        fetchPriority="high"
+        fetchpriority="high"
         className="fade-up portrait-fade object-contain"
         style={{ ...box(555, 249, 410, 508), '--to': 0.57, zIndex: 2 }}
       />
@@ -196,7 +196,7 @@ export default function Hero() {
           alt={`Portrait of ${profile.name}`}
           width="1127"
           height="1396"
-          fetchPriority="high"
+          fetchpriority="high"
           className="fade-up portrait-fade relative z-[2] mx-auto -mb-2 mt-[72px] w-[62%] max-w-[300px] object-contain"
           style={{ '--to': 0.57 }}
         />

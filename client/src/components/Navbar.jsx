@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Download, FileText, Menu, X } from 'lucide-react';
+import { Command, Download, FileText, Menu, X } from 'lucide-react';
 import { navItems, profile } from '../data/profile.js';
 import useScrollSpy from '../hooks/useScrollSpy.js';
+import { MOD_KEY, openCommandPalette } from './CommandPalette.jsx';
 
 const SECTION_IDS = navItems.map((item) => item.id);
 
@@ -92,7 +93,18 @@ export default function Navbar() {
 
         <PillNav active={active} />
 
-        <div className="hidden min-[900px]:block">
+        <div className="hidden items-center gap-3 min-[900px]:flex">
+          {/* Subtle hint that the command palette exists (Ctrl/⌘ + K) */}
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            className="glass-btn hidden items-center gap-1.5 rounded-full px-3 py-2 font-mono text-[12px] text-white/80 transition hover:text-white min-[1200px]:inline-flex"
+            aria-label={`Open command palette (${MOD_KEY} + K)`}
+            title={`Command palette (${MOD_KEY} + K)`}
+          >
+            <Command size={13} aria-hidden="true" />
+            <kbd className="font-mono">{MOD_KEY} K</kbd>
+          </button>
           <ResumeButton />
         </div>
 
@@ -128,9 +140,6 @@ export default function Navbar() {
                 </li>
               );
             })}
-            <li className="p-2 pt-3">
-              <ResumeButton className="w-full justify-center" />
-            </li>
           </ul>
         </nav>
       )}

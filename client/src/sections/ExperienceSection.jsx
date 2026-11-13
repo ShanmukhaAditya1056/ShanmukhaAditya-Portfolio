@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Award, Briefcase, Calendar, ChevronDown, Download, Eye, GraduationCap, MapPin } from 'lucide-react';
 import Page, { PageHeading } from '../components/Page.jsx';
@@ -146,10 +146,11 @@ function TimelineItem({ job, scaled, last }) {
   );
 }
 
-function WorkColumn({ scaled, style }) {
+// forwardRef: AnimatePresence mode="popLayout" passes a ref to measure the column while it exits.
+const WorkColumn = forwardRef(function WorkColumn({ scaled, style }, ref) {
   const s = (n) => (scaled ? u(n) : `${n}px`);
   return (
-    <motion.section layout aria-labelledby="experience-work" {...fade} className={scaled ? 'absolute' : ''} style={style}>
+    <motion.section ref={ref} layout aria-labelledby="experience-work" {...fade} className={scaled ? 'absolute' : ''} style={style}>
       <GlassCard className="h-full" style={{ borderRadius: s(22) }}>
         <div className="flex h-full flex-col" style={{ padding: `${s(16)} ${s(24)}` }}>
           <h3 id="experience-work" className="inline-flex items-center font-bold uppercase text-white" style={{ fontSize: s(14), lineHeight: s(18), letterSpacing: s(2.5), gap: s(8) }}>
@@ -165,7 +166,7 @@ function WorkColumn({ scaled, style }) {
       </GlassCard>
     </motion.section>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /* Education + certifications                                          */
@@ -264,10 +265,11 @@ function CertificationCard({ cert, scaled }) {
   );
 }
 
-function CredentialsColumn({ scaled, style }) {
+// forwardRef: AnimatePresence mode="popLayout" passes a ref to measure the column while it exits.
+const CredentialsColumn = forwardRef(function CredentialsColumn({ scaled, style }, ref) {
   const s = (n) => (scaled ? u(n) : `${n}px`);
   return (
-    <motion.section layout aria-labelledby="experience-credentials" {...fade} className={scaled ? 'absolute' : ''} style={style}>
+    <motion.section ref={ref} layout aria-labelledby="experience-credentials" {...fade} className={scaled ? 'absolute' : ''} style={style}>
       <GlassCard className="h-full" style={{ borderRadius: s(22) }}>
         <div className="flex h-full flex-col" style={{ padding: `${s(16)} ${s(24)}` }}>
           <h3 id="experience-credentials" className="inline-flex items-center font-bold uppercase text-white" style={{ fontSize: s(14), lineHeight: s(18), letterSpacing: s(2.5), gap: s(8) }}>
@@ -288,7 +290,7 @@ function CredentialsColumn({ scaled, style }) {
       </GlassCard>
     </motion.section>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /* Section                                                             */

@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import contactRouter from './routes/contact.js';
 import projectsRouter from './routes/projects.js';
+import githubProjectsRouter from './routes/githubProjects.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 5000;
@@ -27,7 +28,17 @@ const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        // The client fetches `portfolio`-tagged repositories straight from GitHub (client/src/hooks/usePortfolioProjects.js).
+        'connect-src': ["'self'", 'https://api.github.com', 'https://raw.githubusercontent.com'],
+      },
+    },
+  })
+);
 /**
  * An Origin is accepted when it is on the allowlist or when it is this very server
  * (Express serving client/dist — browsers send Origin on same-origin POSTs too).
@@ -65,6 +76,7 @@ app.get('/api/health', (_req, res) => {
 });
 app.use('/api/contact', contactRouter);
 app.use('/api/projects', projectsRouter);
+app.use('/api/github-projects', githubProjectsRouter);
 app.use('/api', (_req, res) => res.status(404).json({ success: false, message: 'Not found.' }));
 
 // ---- Static React build (production) ----

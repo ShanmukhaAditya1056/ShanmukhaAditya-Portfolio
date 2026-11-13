@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { MotionConfig } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar.jsx';
+import CommandPalette from './components/CommandPalette.jsx';
 import PortfolioFloralBackground from './components/PortfolioFloralBackground.jsx';
 import { profile } from './data/profile.js';
 
@@ -45,7 +46,7 @@ function SiteBackground() {
 
   return (
     <div aria-hidden="true" className="site-bg">
-      <img ref={img} src={profile.background} alt="" width="1023" height="767" fetchPriority="high" className="site-bg__photo" />
+      <img ref={img} src={profile.background} alt="" width="1023" height="767" fetchpriority="high" className="site-bg__photo" />
     </div>
   );
 }
@@ -80,6 +81,7 @@ export default function App() {
       </a>
       <SiteBackground />
       <Navbar />
+      <CommandPalette />
       <PortfolioFloralBackground />
       <main id="main">
         <Hero />
